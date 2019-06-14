@@ -4,7 +4,7 @@ void Route::read_wpt
 )
 {	/* read data into the Route's waypoint list from a .wpt file */
       #ifdef DebugReadWpt
-	printf("read_wpt Thread %02i on %s\n", threadnum, str().data());
+	printf("read_wpt Thread %02i Begin %s\n", threadnum, str().data());
 	fflush(stdout);
       #endif
 	std::string filename = path + "/" + region->code + "/" + system->systemname + "/" + root + ".wpt";
@@ -38,6 +38,10 @@ void Route::read_wpt
 	Waypoint *last_visible = 0;
 	char fstr[112];
 
+      #ifdef DebugReadWpt
+	printf("read_wpt Thread %02i Begin processing lines\n", threadnum);
+	fflush(stdout);
+      #endif
 	for (unsigned int l = 0; l < lines.size()-1; l++)
 	{	// strip whitespace
 		while (lines[l][0] == ' ' || lines[l][0] == '\t') lines[l]++;
@@ -110,9 +114,17 @@ void Route::read_wpt
 			w->label_looks_hidden(datacheckerrors);
 		}
 	}
+      #ifdef DebugReadWpt
+	printf("read_wpt Thread %02i End processing lines\n", threadnum);
+	fflush(stdout);
+      #endif
 	delete[] wptdata;
 
 	// per-route datachecks
+      #ifdef DebugReadWpt
+	printf("read_wpt Thread %02i per-route datachecks\n", threadnum);
+	fflush(stdout);
+      #endif
 
 	// look for hidden termini
 	if (point_list.front()->is_hidden)	datacheckerrors->add(this, point_list.front()->label, "", "", "HIDDEN_TERMINUS", "");
@@ -132,9 +144,10 @@ void Route::read_wpt
 	}
 
 	if (point_list.size() < 2) el->add_error("Route contains fewer than 2 points: " + str());
-      #ifndef DebugReadWpt
+      #ifdef DebugReadWpt
+	printf("read_wpt Thread %02i End %s\n", threadnum, str().data());
+	fflush(stdout);
+      #else
 	std::cout << '.' << std::flush;
       #endif
-	//std::cout << str() << std::flush;
-	//print_route();
 }
