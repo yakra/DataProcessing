@@ -1,5 +1,10 @@
-void HighwaySegment::compute_stats()
-{	// always add the segment mileage to the route
+void HighwaySegment::compute_stats(unsigned int threadnum)
+{
+      #ifdef DebugComputeStats
+	printf("compute_stats Thread %02i for %s\n", threadnum, str().data());
+	fflush(stdout);
+      #endif
+	// always add the segment mileage to the route
 	route->mileage += length;
 	//#include "../debug/RtMiSegLen.cpp"
 

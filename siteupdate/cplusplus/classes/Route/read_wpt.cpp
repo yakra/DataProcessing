@@ -1,9 +1,12 @@
 void Route::read_wpt
-(	WaypointQuadtree *all_waypoints, ErrorList *el, std::string path, std::mutex *strtok_mtx,
-	DatacheckEntryList *datacheckerrors, std::unordered_set<std::string> *all_wpt_files
+(	unsigned int threadnum, WaypointQuadtree *all_waypoints, ErrorList *el, std::string path,
+	std::mutex *strtok_mtx, DatacheckEntryList *datacheckerrors, std::unordered_set<std::string> *all_wpt_files
 )
 {	/* read data into the Route's waypoint list from a .wpt file */
-	//cout << "read_wpt on " << str() << endl;
+      #ifdef DebugReadWpt
+	printf("read_wpt Thread %02i on %s\n", threadnum, str().data());
+	fflush(stdout);
+      #endif
 	std::string filename = path + "/" + region->code + "/" + system->systemname + "/" + root + ".wpt";
 	// remove full path from all_wpt_files list
 	awf_mtx.lock();
@@ -129,7 +132,9 @@ void Route::read_wpt
 	}
 
 	if (point_list.size() < 2) el->add_error("Route contains fewer than 2 points: " + str());
+      #ifndef DebugReadWpt
 	std::cout << '.' << std::flush;
+      #endif
 	//std::cout << str() << std::flush;
 	//print_route();
 }

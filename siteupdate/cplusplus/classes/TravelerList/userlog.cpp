@@ -1,12 +1,18 @@
 void userlog
-(	ClinchedDBValues *clin_db_val,
+(	unsigned int threadnum,
+	ClinchedDBValues *clin_db_val,
 	const double total_active_only_miles,
 	const double total_active_preview_miles,
 	std::list<HighwaySystem*> *highway_systems,
 	std::string path
 )
 {	char fstr[112];
+      #ifdef DebugUserLog
+	printf("userlog Thread %02i starting %s.log\n", threadnum, traveler_name.data());
+	fflush(stdout);
+      #else
 	std::cout << "." << std::flush;
+      #endif
 	std::string filename = path+traveler_name+".log";
 	std::ofstream log(filename.data(), std::ios::app);
 	log << "Clinched Highway Statistics\n";

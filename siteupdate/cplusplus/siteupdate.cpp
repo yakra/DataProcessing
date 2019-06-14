@@ -43,7 +43,7 @@ class HGEdge;
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include "enable_threading.cpp"
+#include "config.cpp"
 #include "functions/lower.cpp"
 #include "functions/upper.cpp"
 #include "functions/format_clinched_mi.cpp"
@@ -304,7 +304,7 @@ int main(int argc, char *argv[])
 	for (HighwaySystem* h : highway_systems)
 	{	std::cout << h->systemname << std::flush;
 		for (std::list<Route>::iterator r = h->route_list.begin(); r != h->route_list.end(); r++)
-		{	r->read_wpt(&all_waypoints, &el, args.highwaydatapath+"/hwy_data", &strtok_mtx, datacheckerrors, &all_wpt_files);
+		{	r->read_wpt(0, &all_waypoints, &el, args.highwaydatapath+"/hwy_data", &strtok_mtx, datacheckerrors, &all_wpt_files);
 		}
 		std::cout << "!" << std::endl;
 	}
@@ -373,7 +373,7 @@ int main(int argc, char *argv[])
 		// set up for threaded nmp_merged file writes
 		hs_list = highway_systems;
 		for (unsigned int t = 0; t < args.numthreads; t++)
-			thr[t] = new thread(NmpMergedThread, &hs_list, &list_mtx, &args.nmpmergepath);
+			thr[t] = new thread(NmpMergedThread, t, &hs_list, &list_mtx, &args.nmpmergepath);
 		for (unsigned int t = 0; t < args.numthreads; t++)
 			thr[t]->join();
 		for (unsigned int t = 0; t < args.numthreads; t++)
@@ -403,7 +403,7 @@ int main(int argc, char *argv[])
       #ifdef threading_enabled
 	// set up for threaded .list file processing
 	for (unsigned int t = 0; t < args.numthreads; t++)
-		thr[t] = new thread(ReadListThread, &traveler_ids, &traveler_lists, &list_mtx, &strtok_mtx, &args, &route_hash);
+		thr[t] = new thread(ReadListThread, t, &traveler_ids, &traveler_lists, &list_mtx, &strtok_mtx, &args, &route_hash);
 	for (unsigned int t = 0; t < args.numthreads; t++)
 		thr[t]->join();
 	for (unsigned int t = 0; t < args.numthreads; t++)
@@ -641,7 +641,7 @@ int main(int argc, char *argv[])
 	{	cout << "." << flush;
 		for (Route &r : h->route_list)
 		  for (HighwaySegment *s : r.segment_list)
-		    s->compute_stats();
+		    s->compute_stats(0);
 	}
       #endif
 	cout << '!' << endl;
@@ -730,7 +730,7 @@ int main(int argc, char *argv[])
 	for (unsigned int t = 0; t < args.numthreads; t++)
 		delete thr[t];//*/
       #else
-	for (TravelerList *t : traveler_lists) t->userlog(&clin_db_val, active_only_miles, active_preview_miles, &highway_systems, args.logfilepath+"/users/");
+	for (TravelerList *t : traveler_lists) t->userlog(0, &clin_db_val, active_only_miles, active_preview_miles, &highway_systems, args.logfilepath+"/users/");
       #endif
 	cout << "!" << endl;
 
