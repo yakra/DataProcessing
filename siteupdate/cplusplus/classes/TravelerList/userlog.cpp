@@ -41,9 +41,18 @@ void userlog
 	// present stats by system here, also generate entries for
 	// DB table clinchedSystemMileageByRegion as we compute and
 	// have the data handy
+      #ifdef DebugReadWpt
+	printf("userlog Thread %02i Begin processing HighwaySystems\n", threadnum);
+	fflush(stdout);
+      #endif
 	for (HighwaySystem *h : *highway_systems)
 	  if (h->active_or_preview())
-	  {	if (h->active()) active_systems++;
+	  {	//overall system stats
+	      #ifdef DebugReadWpt
+		printf("userlog Thread %02i %s stats overall\n", threadnum, h->systemname.data());
+		fflush(stdout);
+	      #endif
+		if (h->active()) active_systems++;
 		else	preview_systems++;
 		double t_system_overall = 0;
 		if (system_region_mileages.find(h) != system_region_mileages.end())
@@ -61,6 +70,10 @@ void userlog
 		// stats by region covered by system, always in csmbr for
 		// the DB, but add to logs only if it's been traveled at
 		// all and it covers multiple regions
+	      #ifdef DebugReadWpt
+		printf("userlog Thread %02i %s stats by region\n", threadnum, h->systemname.data());
+		fflush(stdout);
+	      #endif
 		if (t_system_overall)
 		{	if (h->mileage_by_region.size() > 1)
 				log << "System " << h->systemname << " by region:\n";
@@ -85,6 +98,10 @@ void userlog
 
 		// stats by highway for the system, by connected route and
 		// by each segment crossing region boundaries if applicable
+	      #ifdef DebugReadWpt
+		printf("userlog Thread %02i %s stats by highway\n", threadnum, h->systemname.data());
+		fflush(stdout);
+	      #endif
 		if (t_system_overall)
 		{	std::unordered_map<ConnectedRoute*, double> system_con_umap;
 			unsigned int num_con_rtes_clinched = 0;
@@ -138,6 +155,10 @@ void userlog
 			//#include "debug/oscars_usaus_ConRtes.cpp"
 		}
 	  }
+      #ifdef DebugReadWpt
+	printf("userlog Thread %02i End processing HighwaySystems\n", threadnum);
+	fflush(stdout);
+      #endif
 
 	// grand summary, active only
 	sprintf(fstr,"Traveled %i of %i (%.1f%%), Clinched %i of %i (%.1f%%) active systems",
@@ -151,4 +172,8 @@ void userlog
 	log << fstr << '\n';
 
 	log.close();
+      #ifdef DebugReadWpt
+	printf("userlog Thread %02i End %s\n", threadnum, traveler_name.data());
+	fflush(stdout);
+      #endif
 }
