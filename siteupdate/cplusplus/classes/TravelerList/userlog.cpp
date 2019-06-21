@@ -41,14 +41,14 @@ void userlog
 	// present stats by system here, also generate entries for
 	// DB table clinchedSystemMileageByRegion as we compute and
 	// have the data handy
-      #ifdef DebugReadWpt
+      #ifdef DebugUserLog
 	printf("userlog Thread %02i Begin processing HighwaySystems\n", threadnum);
 	fflush(stdout);
       #endif
 	for (HighwaySystem *h : *highway_systems)
 	  if (h->active_or_preview())
 	  {	//overall system stats
-	      #ifdef DebugReadWpt
+	      #ifdef DebugUserLog
 		printf("userlog Thread %02i %s stats overall\n", threadnum, h->systemname.data());
 		fflush(stdout);
 	      #endif
@@ -70,7 +70,7 @@ void userlog
 		// stats by region covered by system, always in csmbr for
 		// the DB, but add to logs only if it's been traveled at
 		// all and it covers multiple regions
-	      #ifdef DebugReadWpt
+	      #ifdef DebugUserLog
 		printf("userlog Thread %02i %s stats by region\n", threadnum, h->systemname.data());
 		fflush(stdout);
 	      #endif
@@ -98,7 +98,7 @@ void userlog
 
 		// stats by highway for the system, by connected route and
 		// by each segment crossing region boundaries if applicable
-	      #ifdef DebugReadWpt
+	      #ifdef DebugUserLog
 		printf("userlog Thread %02i %s stats by highway\n", threadnum, h->systemname.data());
 		fflush(stdout);
 	      #endif
@@ -155,7 +155,7 @@ void userlog
 			//#include "debug/oscars_usaus_ConRtes.cpp"
 		}
 	  }
-      #ifdef DebugReadWpt
+      #ifdef DebugUserLog
 	printf("userlog Thread %02i End processing HighwaySystems\n", threadnum);
 	fflush(stdout);
       #endif
@@ -172,7 +172,7 @@ void userlog
 	log << fstr << '\n';
 
 	log.close();
-      #ifdef DebugReadWpt
+      #ifdef DebugUserLog
 	printf("userlog Thread %02i End %s\n", threadnum, traveler_name.data());
 	fflush(stdout);
       #endif
