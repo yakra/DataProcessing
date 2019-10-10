@@ -1162,7 +1162,7 @@ class DatacheckEntry:
     BUS_WITH_I, NONTERMINAL_UNDERSCORE,
     LONG_UNDERSCORE, LABEL_SLASHES, US_BANNER, VISIBLE_HIDDEN_COLOC,
     HIDDEN_JUNCTION, LABEL_LOOKS_HIDDEN, HIDDEN_TERMINUS,
-    OUT_OF_BOUNDS
+    OUT_OF_BOUNDS, LABEL_LONG_WORD
 
     info is additional information, at this time either a distance (in
     miles) for a long segment error, an angle (in degrees) for a sharp
@@ -3317,6 +3317,10 @@ for h in highway_systems:
                 # now the remaining checks
                 if selfref_found or r.route+r.banner == w.label or re.fullmatch(r.route+r.banner+'[_/].*',w.label):
                     datacheckerrors.append(DatacheckEntry(r,[w.label],'LABEL_SELFREF'))
+
+                # look for too many consecutive lower case letters in label
+                if re.search('[a-z][a-z][a-z][a-z]', w.label):
+                    datacheckerrors.append(DatacheckEntry(r,[w.label],'LABEL_LONG_WORD'))
 
                 # look for too many underscores in label
                 if w.label.count('_') > 1:

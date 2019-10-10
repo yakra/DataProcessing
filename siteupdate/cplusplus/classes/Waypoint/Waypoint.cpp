@@ -309,6 +309,20 @@ inline void Waypoint::bus_with_i(DatacheckEntryList *datacheckerrors)
 	if (!strncmp(c, "Bus", 3)) datacheckerrors->add(route, label, "", "", "BUS_WITH_I", "");
 }
 
+inline void Waypoint::label_long_word(DatacheckEntryList *datacheckerrors)
+{	// look for too many consecutive lower case letters in label
+	size_t consec = 0;
+	for (const char *c = label.data(); *c; c++)
+	  if (*c >= 'a' && *c <= 'z')
+	  {	consec++;
+		if (consec > 3)
+		{	datacheckerrors->add(route, label, "", "", "LABEL_LONG_WORD", "");
+			return;
+		}
+	  }
+	  else consec = 0;
+}
+
 inline void Waypoint::label_looks_hidden(DatacheckEntryList *datacheckerrors)
 {	// look for labels that look like hidden waypoints but which aren't hidden
 	if (label.size() != 7)			return;
