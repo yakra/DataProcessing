@@ -451,23 +451,23 @@ class Waypoint:
         # TODO: compress when some but not all labels match, such as
         # E127@Kan&AH60@Kan_N&AH64@Kan&AH67@Kan&M38@Kan
         # or possibly just compress ignoring the _ suffixes here
-        routes = ""
-        pointname = ""
+        routes = []
         matches = 0
         for w in colocated:
-            if routes == "":
-                routes = w.route.list_entry_name()
-                pointname = w.label
-                matches = 1
-            elif pointname == w.label or w.label.startswith('+'):
-                # this check seems odd, but avoids double route names
-                # at border crossings
-                if routes != w.route.list_entry_name():
-                    routes += "/" + w.route.list_entry_name()
+            if colocated[0].label == w.label or w.label[0] == '+':
+                # avoid double route names at border crossings
+                if w.route.list_entry_name() not in routes:
+                    routes.append(w.route.list_entry_name())
                 matches += 1
+            else:
+                break
         if matches == len(colocated):
-            log.append("Straightforward concurrency: " + name + " -> " + routes + "@" + pointname)
-            return routes + "@" + pointname
+            newname = ""
+            for r in routes:
+                newname += '/' + r
+            newname += '@' + colocated[0].label
+            log.append("Straightforward concurrency: " + name + " -> " + newname[1:])
+            return newname[1:]
 
         # straightforward 2-route intersection with matching labels
         # NY30@US20&US20@NY30 would become NY30/US20
@@ -624,6 +624,33 @@ class Waypoint:
                 log.append("Exit number: " + name + " -> " + label)
                 return label
 
+        # Check for reversed border labels
+        # DE491@DE/PA&PA491@PA/DE                                             would become   DE491/PA491@PA/DE
+        # NB2@QC/NB&TCHMai@QC/NB&A-85Not@NB/QC&TCHMai@QC/NB                   would become   NB2/TCHMai/A-85Not/@QC/NB
+        # US12@IL/IN&US20@IL/IN&US41@IN/IL&US12@IL/IN&US20@IL/IN&US41@IN/IL   would become   US12/US20/US41@IL/IN
+        if '/' in self.label:
+            slash = self.label.index('/')
+            reverse = self.label[slash+1:]+'/'+self.label[:slash]
+            matches = 1
+            # colocated[0].label *IS* label, so no need to check that
+            for i in range(1, len(colocated)):
+              if colocated[i].label == self.label or colocated[i].label == reverse:
+                matches += 1
+              else:
+                  break
+            if matches == len(colocated):
+                routes = []
+                for w in colocated:
+                    if w.route.list_entry_name() not in routes:
+                        routes.append(w.route.list_entry_name())
+
+                newname = routes[0]
+                for i in range(1, len(routes)):
+                    newname += '/' + routes[i]
+                newname += '@' + self.label
+                log.append("Reversed border labels: " + name + " -> " + newname)
+                return newname
+
         # TODO: I-20@76&I-77@16
         # should become I-20/I-77 or maybe I-20(76)/I-77(16)
         # not shorter, so maybe who cares about this one?
@@ -638,9 +665,6 @@ class Waypoint:
 
         # TODO: I-610@TX288&I-610@38&TX288@I-610
         # this is the overlap point of a loop
-
-        # TODO: boundaries where order is reversed on colocated points
-        # Vt4@FIN/NOR&E75@NOR/FIN&E75@NOR/FIN
 
         log.append("Keep failsafe: " + name)
         return name
@@ -1730,101 +1754,52 @@ class HighwayGraph:
                     else:
                         HGEdge(vertex=v, fmt_mask=1)
                         HGEdge(vertex=v, fmt_mask=2)
+        print("!")
 
-        # print summary info
-        print("!\n" + et.et() + "   Simple graph has " + str(len(self.vertices)) +
-              " vertices, " + str(self.simple_edge_count()) + " edges.")
-        print(et.et() + "Collapsed graph has " + str(self.num_collapsed_vertices()) +
-              " vertices, " + str(self.collapsed_edge_count()) + " edges.")
-        print(et.et() + " Traveled graph has " + str(self.num_traveled_vertices()) +
-              " vertices, " + str(self.traveled_edge_count()) + " edges.")
+    def matching_vertices_and_edges(self, qt, regions, systems, placeradius, rg_vset_hash):
+        # return seven items:
+        # mvset		 # a set of vertices, optionally restricted by region or system or placeradius area
+        cv_count = 0	 # the number of collapsed vertices in this set
+        tv_count = 0	 # the number of traveled vertices in this set
+        mse = set()	 # matching    simple edges
+        mce = set()	 # matching collapsed edges
+        mte = set()	 # matching  traveled edges
+        trav_set = set() # sorted into a list of travelers for traveled graphs
+        # ...as a tuple
 
-    def num_collapsed_vertices(self):
-        count = 0
-        for v in self.vertices.values():
-            if v.visibility == 2:
-                count += 1
-        return count
-
-    def num_traveled_vertices(self):
-        count = 0
-        for v in self.vertices.values():
-            if v.visibility >= 1:
-                count += 1
-        return count
-
-    def simple_edge_count(self):
-        edges = 0
-        for v in self.vertices.values():
-            edges += len(v.incident_s_edges)
-        return edges//2
-
-    def collapsed_edge_count(self):
-        edges = 0
-        for v in self.vertices.values():
-            if v.visibility == 2:
-                edges += len(v.incident_c_edges)
-        return edges//2
-
-    def traveled_edge_count(self):
-        edges = 0
-        for v in self.vertices.values():
-            if v.visibility >= 1:
-                edges += len(v.incident_t_edges)
-        return edges//2
-
-    def matching_vertices(self, regions, systems, placeradius, rg_vset_hash, qt):
-        # return a tuple containing
-        # 1st, a set of vertices from the graph, optionally
-        # restricted by region or system or placeradius area
-        # 2nd, the number of collapsed vertices in this set
-        # 3rd, the number of traveled vertices in this set
-        cv_count = 0
-        tv_count = 0
-        vertex_set = set()
-        rvset = set()
-        svset = set()
-        # rvset is the union of all sets in regions
+        rvset = set()	# union of all sets in regions
+        svset = set()	# union of all sets in systems
         if regions is not None:
             for r in regions:
                 rvset = rvset | rg_vset_hash[r]
-        # svset is the union of all sets in systems
         if systems is not None:
             for h in systems:
                 svset = svset | h.vertices
-        # pvset is the set of vertices within placeradius
         if placeradius is not None:
             pvset = placeradius.vertices(qt, self)
 
         # determine which vertices are within our region(s) and/or system(s)
         if regions is not None:
-            vertex_set = rvset
+            mvset = rvset
             if placeradius is not None:
-                vertex_set = vertex_set & prset
+                mvset = mvset & pvset
             if systems is not None:
-                vertex_set = vertex_set & svset
+                mvset = mvset & svset
         elif systems is not None:
-            vertex_set = svset
+            mvset = svset
             if placeradius is not None:
-                vertex_set = vertex_set & prset
+                mvset = mvset & pvset
         elif placeradius is not None:
-            vertex_set = pvset
+            mvset = pvset
         else: # no restrictions via region, system, or placeradius, so include everything
+            mvset = set()
             for v in self.vertices.values():
-                vertex_set.add(v)
-        # find number of collapsed vertices
-        for v in vertex_set:
-            if v.visibility >= 1:
-                tv_count += 1
-                if v.visibility == 2:
-                    cv_count += 1
-        return (vertex_set, cv_count, tv_count)
-
-    def matching_simple_edges(self, mv, regions=None, systems=None, placeradius=None):
-        # return a set of edges from the graph, optionally
-        # restricted by region or system or placeradius area
-        edge_set = set()
-        for v in mv:
+                mvset.add(v)
+        
+        # Compute sets of edges for subgraphs, optionally
+        # restricted by region or system or placeradius.
+        # Keep a count of collapsed & traveled vertices as we go.
+        for v in mvset:
             for e in v.incident_s_edges:
                 if placeradius is None or placeradius.contains_edge(e):
                     if regions is None or e.segment.route.region in regions:
@@ -1833,39 +1808,12 @@ class HighwayGraph:
                             for (r, s) in e.route_names_and_systems:
                                 if s in systems:
                                     system_match = True
+                                    break
                         if system_match:
-                            edge_set.add(e)
-        return edge_set
-
-    def matching_collapsed_edges(self, mv, regions=None, systems=None,
-                                 placeradius=None):
-        # return a set of edges for the collapsed edge graph format,
-        # optionally restricted by region or system or placeradius
-        edge_set = set()
-        for v in mv:
-            if v.visibility < 2:
-                continue
-            for e in v.incident_c_edges:
-                if placeradius is None or placeradius.contains_edge(e):
-                    if regions is None or e.segment.route.region in regions:
-                        system_match = systems is None
-                        if not system_match:
-                            for (r, s) in e.route_names_and_systems:
-                                if s in systems:
-                                    system_match = True
-                        if system_match:
-                            edge_set.add(e)
-        return edge_set
-
-    def matching_traveled_edges(self, mv, regions=None, systems=None,
-                                 placeradius=None):
-        # return a set of edges for the traveled graph format,
-        # optionally restricted by region or system or placeradius
-        edge_set = set()
-        trav_set = set()
-        for v in mv:
+                            mse.add(e)
             if v.visibility < 1:
                 continue
+            tv_count += 1
             for e in v.incident_t_edges:
                 if placeradius is None or placeradius.contains_edge(e):
                     if regions is None or e.segment.route.region in regions:
@@ -1874,11 +1822,26 @@ class HighwayGraph:
                             for (r, s) in e.route_names_and_systems:
                                 if s in systems:
                                     system_match = True
+                                    break
                         if system_match:
-                            edge_set.add(e)
+                            mte.add(e)
                             for t in e.segment.clinched_by:
                                 trav_set.add(t)
-        return (edge_set, sorted(trav_set, key=lambda TravelerList: TravelerList.traveler_name))
+            if v.visibility < 2:
+                continue
+            cv_count += 1
+            for e in v.incident_c_edges:
+                if placeradius is None or placeradius.contains_edge(e):
+                    if regions is None or e.segment.route.region in regions:
+                        system_match = systems is None
+                        if not system_match:
+                            for (r, s) in e.route_names_and_systems:
+                                if s in systems:
+                                    system_match = True
+                                    break
+                        if system_match:
+                            mce.add(e)
+        return (mvset, cv_count, tv_count, mse, mce, mte, sorted(trav_set, key=lambda TravelerList: TravelerList.traveler_name))
 
     # write the entire set of highway data in .tmg format.
     # The first line is a header specifying the format and version number,
@@ -1894,14 +1857,32 @@ class HighwayGraph:
         simplefile = open(path+"tm-master-simple.tmg","w",encoding='utf-8')
         collapfile = open(path+"tm-master-collapsed.tmg","w",encoding='utf-8')
         travelfile = open(path+"tm-master-traveled.tmg","w",encoding='utf-8')
-        num_collapsed_edges = self.collapsed_edge_count()
-        num_traveled_edges = self.traveled_edge_count()
+        cv = 0
+        tv = 0
+        se = 0
+        ce = 0
+        te = 0
+
+        # count vertices & edges
+        for v in self.vertices.values():
+            se += len(v.incident_s_edges)
+            if v.visibility >= 1:
+                tv += 1
+                te += len(v.incident_t_edges)
+                if v.visibility == 2:
+                    cv += 1
+                    ce += len(v.incident_c_edges)
+        se //= 2;
+        ce //= 2;
+        te //= 2;
+
+        # write graph headers
         simplefile.write("TMG 1.0 simple\n")
         collapfile.write("TMG 1.0 collapsed\n")
         travelfile.write("TMG 2.0 traveled\n")
-        simplefile.write(str(len(self.vertices)) + ' ' + str(self.simple_edge_count()) + '\n')
-        collapfile.write(str(self.num_collapsed_vertices()) + ' ' + str(num_collapsed_edges) + '\n')
-        travelfile.write(str(self.num_traveled_vertices()) + ' ' + str(num_traveled_edges) + ' ' + str(len(traveler_lists)) + '\n')
+        simplefile.write(str(len(self.vertices)) + ' ' + str(se) + '\n')
+        collapfile.write(str(cv) + ' ' + str(ce) + '\n')
+        travelfile.write(str(tv) + ' ' + str(te) + ' ' + str(len(traveler_lists)) + '\n')
 
         # write vertices
         sv = 0
@@ -1949,9 +1930,16 @@ class HighwayGraph:
         simplefile.close()
         collapfile.close()
         travelfile.close()
-        graph_list.append(GraphListEntry('tm-master-simple.tmg', 'All Travel Mapping Data', sv, self.simple_edge_count(), 0, 'simple', 'master'))
-        graph_list.append(GraphListEntry('tm-master-collapsed.tmg', 'All Travel Mapping Data', cv, self.collapsed_edge_count(), 0, 'collapsed', 'master'))
-        graph_list.append(GraphListEntry('tm-master-traveled.tmg', 'All Travel Mapping Data', tv, self.traveled_edge_count(), len(traveler_lists), 'traveled', 'master'))
+        graph_list.append(GraphListEntry('tm-master-simple.tmg', 'All Travel Mapping Data', sv, se, 0, 'simple', 'master'))
+        graph_list.append(GraphListEntry('tm-master-collapsed.tmg', 'All Travel Mapping Data', cv, ce, 0, 'collapsed', 'master'))
+        graph_list.append(GraphListEntry('tm-master-traveled.tmg', 'All Travel Mapping Data', tv, te, len(traveler_lists), 'traveled', 'master'))
+        # print summary info
+        print("   Simple graph has " + str(len(self.vertices)) +
+              " vertices, " + str(se) + " edges.")
+        print("Collapsed graph has " + str(cv) +
+              " vertices, " + str(ce) + " edges.")
+        print(" Traveled graph has " + str(tv) +
+              " vertices, " + str(te) + " edges.")
 
     # write a subset of the data,
     # in simple, collapsed and traveled formats,
@@ -1962,10 +1950,7 @@ class HighwayGraph:
         simplefile = open(path+root+"-simple.tmg","w",encoding='utf-8')
         collapfile = open(path+root+"-collapsed.tmg","w",encoding='utf-8')
         travelfile = open(path+root+"-traveled.tmg","w",encoding='utf-8')
-        (mv, cv_count, tv_count) = self.matching_vertices(regions, systems, placeradius, self.rg_vset_hash, qt)
-        mse = self.matching_simple_edges(mv, regions, systems, placeradius)
-        mce = self.matching_collapsed_edges(mv, regions, systems, placeradius)
-        (mte, traveler_lists) = self.matching_traveled_edges(mv, regions, systems, placeradius)
+        (mv, cv_count, tv_count, mse, mce, mte, traveler_lists) = self.matching_vertices_and_edges(qt, regions, systems, placeradius, self.rg_vset_hash)
         """if len(traveler_lists) == 0:
             print("\n\nNo travelers in " + root + "\n", flush=True)#"""
         # assign traveler numbers
@@ -2159,7 +2144,7 @@ else:
 
 # Create a list of HighwaySystem objects, one per system in systems.csv file
 highway_systems = []
-print(et.et() + "Reading systems list in " + args.highwaydatapath+"/"+args.systemsfile + ".  ",end="",flush=True)
+print(et.et() + "Reading systems list in " + args.highwaydatapath+"/"+args.systemsfile + ".  ",flush=True)
 try:
     file = open(args.highwaydatapath+"/"+args.systemsfile, "rt",encoding='utf-8')
 except OSError as e:
