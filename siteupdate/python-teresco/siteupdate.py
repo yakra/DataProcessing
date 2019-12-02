@@ -269,14 +269,15 @@ class Waypoint:
         url_parts = parts[-1].split('=')
         if len(url_parts) < 3:
             #print("\nWARNING: Malformed URL in " + route.root + ", line: " + line, end="", flush=True)
-            datacheckerrors.append(DatacheckEntry(route,[self.label],'MALFORMED_URL', parts[-1]))
-            self.lat = 0
-            self.lng = 0
+            datacheckerrors.append(DatacheckEntry(route,[self.label],'MALFORMED_URL', 'MISSING_ARG(S)'))
+            self.lat = 0.0
+            self.lng = 0.0
             self.colocated = None
             self.near_miss_points = None
             return
         lat_string = url_parts[1].split("&")[0] # chop off "&lon"
         lng_string = url_parts[2].split("&")[0] # chop off possible "&zoom"
+        valid_coords = True
 
         # make sure lat_string is valid
         point_count = 0
@@ -286,23 +287,26 @@ class Waypoint:
                 point_count += 1
                 if point_count > 1:
                     #print("\nWARNING: Malformed URL in " + route.root + ", line: " + line, end="", flush=True)
-                    datacheckerrors.append(DatacheckEntry(route,[self.label],'MALFORMED_URL', parts[-1]))
-                    lat_string = "0"
-                    lng_string = "0"
+                    datacheckerrors.append(DatacheckEntry(route,[self.label],'MALFORMED_URL', lat_string))
+                    self.lat = 0.0
+                    self.lng = 0.0
+                    valid_coords = False
                     break
             # check for minus sign not at beginning
             if lat_string[c] == '-' and c > 0:
                 #print("\nWARNING: Malformed URL in " + route.root + ", line: " + line, end="", flush=True)
-                datacheckerrors.append(DatacheckEntry(route,[self.label],'MALFORMED_URL', parts[-1]))
-                lat_string = "0"
-                lng_string = "0"
+                datacheckerrors.append(DatacheckEntry(route,[self.label],'MALFORMED_URL', lat_string))
+                self.lat = 0.0
+                self.lng = 0.0
+                valid_coords = False
                 break
             # check for invalid characters
             if lat_string[c] not in "-.0123456789":
                 #print("\nWARNING: Malformed URL in " + route.root + ", line: " + line, end="", flush=True)
-                datacheckerrors.append(DatacheckEntry(route,[self.label],'MALFORMED_URL', parts[-1]))
-                lat_string = "0"
-                lng_string = "0"
+                datacheckerrors.append(DatacheckEntry(route,[self.label],'MALFORMED_URL', lat_string))
+                self.lat = 0.0
+                self.lng = 0.0
+                valid_coords = False
                 break
 
         # make sure lng_string is valid
@@ -313,27 +317,31 @@ class Waypoint:
                 point_count += 1
                 if point_count > 1:
                     #print("\nWARNING: Malformed URL in " + route.root + ", line: " + line, end="", flush=True)
-                    datacheckerrors.append(DatacheckEntry(route,[self.label],'MALFORMED_URL', parts[-1]))
-                    lat_string = "0"
-                    lng_string = "0"
+                    datacheckerrors.append(DatacheckEntry(route,[self.label],'MALFORMED_URL', lng_string))
+                    self.lat = 0.0
+                    self.lng = 0.0
+                    valid_coords = False
                     break
             # check for minus sign not at beginning
             if lng_string[c] == '-' and c > 0:
                 #print("\nWARNING: Malformed URL in " + route.root + ", line: " + line, end="", flush=True)
-                datacheckerrors.append(DatacheckEntry(route,[self.label],'MALFORMED_URL', parts[-1]))
-                lat_string = "0"
-                lng_string = "0"
+                datacheckerrors.append(DatacheckEntry(route,[self.label],'MALFORMED_URL', lng_string))
+                self.lat = 0.0
+                self.lng = 0.0
+                valid_coords = False
                 break
             # check for invalid characters
             if lng_string[c] not in "-.0123456789":
                 #print("\nWARNING: Malformed URL in " + route.root + ", line: " + line, end="", flush=True)
-                datacheckerrors.append(DatacheckEntry(route,[self.label],'MALFORMED_URL', parts[-1]))
-                lat_string = "0"
-                lng_string = "0"
+                datacheckerrors.append(DatacheckEntry(route,[self.label],'MALFORMED_URL', lng_string))
+                self.lat = 0.0
+                self.lng = 0.0
+                valid_coords = False
                 break
 
-        self.lat = float(lat_string)
-        self.lng = float(lng_string)
+        if valid_coords:
+            self.lat = float(lat_string)
+            self.lng = float(lng_string)
         # also keep track of a list of colocated waypoints, if any
         self.colocated = None
         # and keep a list of "near-miss points", if any
@@ -1179,14 +1187,32 @@ class DatacheckEntry:
     as the endpoints of a too-long segment or the three points that
     form a sharp angle)
 
-    code is the error code string, one of SHARP_ANGLE, BAD_ANGLE,
-    DUPLICATE_LABEL, DUPLICATE_COORDS, LABEL_SELFREF,
-    LABEL_INVALID_CHAR, LONG_SEGMENT, MALFORMED_URL,
-    LABEL_UNDERSCORES, VISIBLE_DISTANCE, LABEL_PARENS, LACKS_GENERIC,
-    BUS_WITH_I, NONTERMINAL_UNDERSCORE,
-    LONG_UNDERSCORE, LABEL_SLASHES, US_BANNER, VISIBLE_HIDDEN_COLOC,
-    HIDDEN_JUNCTION, LABEL_LOOKS_HIDDEN, HIDDEN_TERMINUS,
-    OUT_OF_BOUNDS, LABEL_LONG_WORD
+    code is the error code string, one of:
+    BAD_ANGLE
+    BUS_WITH_I
+    DUPLICATE_COORDS
+    DUPLICATE_LABEL
+    HIDDEN_JUNCTION
+    HIDDEN_TERMINUS
+    INVALID_FINAL_CHAR
+    INVALID_FIRST_CHAR
+    LABEL_INVALID_CHAR
+    LABEL_LONG_WORD
+    LABEL_LOOKS_HIDDEN
+    LABEL_PARENS
+    LABEL_SELFREF
+    LABEL_SLASHES
+    LABEL_UNDERSCORES
+    LACKS_GENERIC
+    LONG_SEGMENT
+    LONG_UNDERSCORE
+    MALFORMED_URL
+    NONTERMINAL_UNDERSCORE
+    OUT_OF_BOUNDS
+    SHARP_ANGLE
+    US_BANNER
+    VISIBLE_DISTANCE
+    VISIBLE_HIDDEN_COLOC
 
     info is additional information, at this time either a distance (in
     miles) for a long segment error, an angle (in degrees) for a sharp
@@ -2989,9 +3015,10 @@ file.close()
 
 lines.pop(0)  # ignore header line
 datacheckfps = []
-datacheck_always_error = [ 'DUPLICATE_LABEL', 'HIDDEN_TERMINUS',
-                           'LABEL_INVALID_CHAR', 'LABEL_SLASHES',
-                           'LONG_UNDERSCORE', 'MALFORMED_URL',
+datacheck_always_error = [ 'BAD_ANGLE', 'DUPLICATE_LABEL', 'HIDDEN_TERMINUS',
+                           'INVALID_FINAL_CHAR', 'INVALID_FIRST_CHAR',
+                           'LABEL_INVALID_CHAR', 'LABEL_PARENS', 'LABEL_SLASHES',
+                           'LABEL_UNDERSCORES', 'LONG_UNDERSCORE', 'MALFORMED_URL',
                            'NONTERMINAL_UNDERSCORE' ]
 for line in lines:
     fields = line.rstrip('\n').split(';')
@@ -3321,16 +3348,29 @@ for h in highway_systems:
                 if w.label.count('/') > 1:
                     datacheckerrors.append(DatacheckEntry(r,[w.label],'LABEL_SLASHES'))
 
-                # look for parenthesis balance in label
-                if w.label.count('(') != w.label.count(')'):
+                # check parentheses: only 0 of both or 1 of both, '(' before ')'
+                left_count = w.label.count('(')
+                right_count = w.label.count(')')
+                if left_count != right_count \
+                or left_count > 1 \
+                or (left_count == 1 and w.label.index('(') > w.label.index(')')):
                     datacheckerrors.append(DatacheckEntry(r,[w.label],'LABEL_PARENS'))
 
                 # look for labels with invalid characters
-                if not re.fullmatch('[a-zA-Z0-9()/\+\*_\-\.]+', w.label):
+                if not re.fullmatch('\*?[a-zA-Z0-9()/_\-\.]+', w.label):
                     datacheckerrors.append(DatacheckEntry(r,[w.label],'LABEL_INVALID_CHAR'))
                 for a in w.alt_labels:
-                    if not re.fullmatch('[a-zA-Z0-9()/\+\*_\-\.]+', a):
+                    if not re.fullmatch('\+?\*?[a-zA-Z0-9()/_\-\.]+', a):
                         datacheckerrors.append(DatacheckEntry(r,[a],'LABEL_INVALID_CHAR'))
+
+                # look for labels with invalid first or last character
+                index = 0
+                while w.label[index] == '*':
+                    index += 1
+                if index < len(w.label) and w.label[index] in "_/(":
+                    datacheckerrors.append(DatacheckEntry(r,[w.label],'INVALID_FIRST_CHAR', w.label[index]))
+                if w.label[-1] == "_" or w.label[-1] == "/":
+                    datacheckerrors.append(DatacheckEntry(r,[w.label],'INVALID_FINAL_CHAR', w.label[-1]))
 
                 # look for labels with a slash after an underscore
                 if '_' in w.label and '/' in w.label and \
@@ -3735,7 +3775,7 @@ else:
 
     # datacheck errors into the db
     print(et.et() + "...datacheckErrors", flush=True)
-    sqlfile.write('CREATE TABLE datacheckErrors (route VARCHAR(32), label1 VARCHAR(50), label2 VARCHAR(20), label3 VARCHAR(20), code VARCHAR(20), value VARCHAR(32), falsePositive BOOLEAN, FOREIGN KEY (route) REFERENCES routes(root));\n')
+    sqlfile.write('CREATE TABLE datacheckErrors (route VARCHAR(32), label1 VARCHAR(50), label2 VARCHAR(20), label3 VARCHAR(20), code VARCHAR(22), value VARCHAR(32), falsePositive BOOLEAN, FOREIGN KEY (route) REFERENCES routes(root));\n')
     if len(datacheckerrors) > 0:
         sqlfile.write('INSERT INTO datacheckErrors VALUES\n')
         first = True

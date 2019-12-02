@@ -48,6 +48,7 @@ class Waypoint
 	inline void label_long_word(DatacheckEntryList *);
 	inline void label_looks_hidden(DatacheckEntryList *);
 	inline void label_invalid_char(DatacheckEntryList *, std::string &);
+	inline void label_invalid_ends(DatacheckEntryList *);
 	inline void label_parens(DatacheckEntryList *);
 	inline void label_slashes(DatacheckEntryList *, const char *);
 	inline void label_selfref(DatacheckEntryList *, const char *);
