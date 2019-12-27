@@ -77,6 +77,7 @@ class HGEdge;
 #include "classes/GraphGeneration/HGEdge.cpp"
 #include "classes/GraphGeneration/PlaceRadius.cpp"
 #include "threads/ReadWptThread.cpp"
+#include "threads/NmpSearchThread.cpp"
 #include "threads/NmpMergedThread.cpp"
 #include "threads/ReadListThread.cpp"
 #include "threads/ConcAugThread.cpp"
@@ -315,7 +316,7 @@ int main(int argc, char *argv[])
 
 	//#include "debug/qt_and_colocate_check.cpp"
 	cout << et.et() << "Writing WaypointQuadtree.tmg." << endl;
-	all_waypoints.write_qt_tmg(); //FIXME needs argument for file path
+	all_waypoints.write_qt_tmg(args.logfilepath+"/WaypointQuadtree.tmg");
 	cout << et.et() << "Sorting waypoints in Quadtree." << endl;
 	all_waypoints.sort();
 	cout << et.et() << "Sorting colocated point lists." << endl;
@@ -332,6 +333,22 @@ int main(int argc, char *argv[])
 		all_wpt_files.clear();
 	}
 	else	cout << "All .wpt files in " << args.highwaydatapath << "/hwy_data processed." << endl;
+
+	// create NMP lists
+	cout << et.et() << "Searching for near-miss points." << endl;
+      #ifdef threading_enabled
+	// set up for threaded processing of highway systems
+	hs_it = highway_systems.begin();
+
+	for (unsigned int t = 0; t < args.numthreads; t++)
+		thr[t] = new thread(NmpSearchThread, t, &highway_systems, &hs_it, &list_mtx, &all_waypoints);
+	for (unsigned int t = 0; t < args.numthreads; t++)
+		thr[t]->join();
+	for (unsigned int t = 0; t < args.numthreads; t++)
+		delete thr[t];
+      #else
+	for (Waypoint *w : all_waypoints.point_list()) w->near_miss_points = all_waypoints.near_miss_waypoints(w, 0.0005);
+      #endif
 
 	// Near-miss point log
 	cout << et.et() << "Near-miss point log and tm-master.nmp file." << endl;
@@ -856,7 +873,8 @@ int main(int argc, char *argv[])
 	({	"BAD_ANGLE", "DUPLICATE_LABEL", "HIDDEN_TERMINUS",
 		"INVALID_FINAL_CHAR", "INVALID_FIRST_CHAR",
 		"LABEL_INVALID_CHAR", "LABEL_PARENS", "LABEL_SLASHES",
-		"LABEL_UNDERSCORES", "LONG_UNDERSCORE", "MALFORMED_URL",
+		"LABEL_UNDERSCORES", "LONG_UNDERSCORE",
+		"MALFORMED_LAT", "MALFORMED_LON", "MALFORMED_URL",
 		"NONTERMINAL_UNDERSCORE"
 	});
 	while (getline(file, line))
