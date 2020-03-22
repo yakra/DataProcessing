@@ -295,15 +295,15 @@ int main(int argc, char *argv[])
       #ifdef threading_enabled
 	// set up for threaded processing of highway systems
 	list<HighwaySystem*>::iterator hs_it = highway_systems.begin();
-
-	thread **thr = new thread*[args.numthreads];
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	thread **thr = new thread*[args.ReadWptThreads];
+	for (unsigned int t = 0; t < args.ReadWptThreads; t++)
 		thr[t] = new thread(ReadWptThread, t, &highway_systems, &hs_it, &list_mtx, args.highwaydatapath+"/hwy_data",
 				    &el, &all_wpt_files, &all_waypoints, &strtok_mtx, datacheckerrors);
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	for (unsigned int t = 0; t < args.ReadWptThreads; t++)
 		thr[t]->join();
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	for (unsigned int t = 0; t < args.ReadWptThreads; t++)
 		delete thr[t];
+	delete[] thr;
       #else
 	for (HighwaySystem* h : highway_systems)
 	{	std::cout << h->systemname << std::flush;
@@ -341,13 +341,14 @@ int main(int argc, char *argv[])
       #ifdef threading_enabled
 	// set up for threaded NMP search
 	hs_it = highway_systems.begin();
-
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	thr = new thread*[args.NmpSearchThreads];
+	for (unsigned int t = 0; t < args.NmpSearchThreads; t++)
 		thr[t] = new thread(NmpSearchThread, t, &highway_systems, &hs_it, &list_mtx, &all_waypoints);
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	for (unsigned int t = 0; t < args.NmpSearchThreads; t++)
 		thr[t]->join();
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	for (unsigned int t = 0; t < args.NmpSearchThreads; t++)
 		delete thr[t];
+	delete[] thr;
       #else
 	for (Waypoint *w : all_waypoints.point_list()) w->near_miss_points = all_waypoints.near_miss_waypoints(w, 0.0005);
       #endif
@@ -389,12 +390,14 @@ int main(int argc, char *argv[])
 	      #ifdef threading_enabled
 		// set up for threaded nmp_merged file writes
 		hs_it = highway_systems.begin();
-		for (unsigned int t = 0; t < args.numthreads; t++)
+		thr = new thread*[args.NmpMergedThreads];
+		for (unsigned int t = 0; t < args.NmpMergedThreads; t++)
 			thr[t] = new thread(NmpMergedThread, t, &highway_systems, &hs_it, &list_mtx, &args.nmpmergepath);
-		for (unsigned int t = 0; t < args.numthreads; t++)
+		for (unsigned int t = 0; t < args.NmpMergedThreads; t++)
 			thr[t]->join();
-		for (unsigned int t = 0; t < args.numthreads; t++)
+		for (unsigned int t = 0; t < args.NmpMergedThreads; t++)
 			delete thr[t];//*/
+		delete[] thr;
 	      #else
 		for (HighwaySystem *h : highway_systems)
 		  for (Route &r : h->route_list)
@@ -415,17 +418,19 @@ int main(int argc, char *argv[])
 
 	// Create a list of TravelerList objects, one per person
 	list<TravelerList*> traveler_lists;
-	list<string>::iterator id_it = traveler_ids.begin();
 
 	cout << et.et() << "Processing traveler list files:" << endl;
       #ifdef threading_enabled
 	// set up for threaded .list file processing
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	list<string>::iterator id_it = traveler_ids.begin();
+	thr = new thread*[args.ReadListThreads];
+	for (unsigned int t = 0; t < args.ReadListThreads; t++)
 		thr[t] = new thread(ReadListThread, t, &traveler_ids, &id_it, &traveler_lists, &list_mtx, &strtok_mtx, &args, &route_hash);
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	for (unsigned int t = 0; t < args.ReadListThreads; t++)
 		thr[t]->join();
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	for (unsigned int t = 0; t < args.ReadListThreads; t++)
 		delete thr[t];
+	delete[] thr;
       #else
 	for (string &t : traveler_ids)
 	{	cout << t << ' ' << std::flush;
@@ -609,13 +614,14 @@ int main(int argc, char *argv[])
       #ifdef threading_enabled
 	// set up for threaded concurrency augments
 	list<TravelerList*>::iterator tl_it = traveler_lists.begin();
-
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	thr = new thread*[args.ConcAugThreads];
+	for (unsigned int t = 0; t < args.ConcAugThreads; t++)
 		thr[t] = new thread(ConcAugThread, t, &traveler_lists, &tl_it, &list_mtx, &log_mtx, &concurrencyfile);
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	for (unsigned int t = 0; t < args.ConcAugThreads; t++)
 		thr[t]->join();
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	for (unsigned int t = 0; t < args.ConcAugThreads; t++)
 		delete thr[t];//*/
+	delete[] thr;
       #else
 	for (TravelerList *t : traveler_lists)
 	{	cout << '.' << flush;
@@ -647,12 +653,14 @@ int main(int argc, char *argv[])
       #ifdef threading_enabled
 	// set up for threaded stats computation
 	hs_it = highway_systems.begin();
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	thr = new thread*[args.CompStatsThreads];
+	for (unsigned int t = 0; t < args.CompStatsThreads; t++)
 		thr[t] = new thread(ComputeStatsThread, t, &highway_systems, &hs_it, &list_mtx);
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	for (unsigned int t = 0; t < args.CompStatsThreads; t++)
 		thr[t]->join();
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	for (unsigned int t = 0; t < args.CompStatsThreads; t++)
 		delete thr[t];//*/
+	delete[] thr;
       #else
 	for (HighwaySystem *h : highway_systems)
 	{	cout << "." << flush;
@@ -738,15 +746,17 @@ int main(int argc, char *argv[])
       #ifdef threading_enabled
 	// set up for threaded user logs
 	tl_it = traveler_lists.begin();
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	thr = new thread*[args.UserLogThreads];
+	for (unsigned int t = 0; t < args.UserLogThreads; t++)
 		thr[t] = new thread
 		(	UserLogThread, t, &traveler_lists, &tl_it, &list_mtx, &clin_db_val, active_only_miles,
 			active_preview_miles, &highway_systems, args.logfilepath+"/users/"
 		);
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	for (unsigned int t = 0; t < args.UserLogThreads; t++)
 		thr[t]->join();
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	for (unsigned int t = 0; t < args.UserLogThreads; t++)
 		delete thr[t];//*/
+	delete[] thr;
       #else
 	for (TravelerList *t : traveler_lists) t->userlog(&clin_db_val, active_only_miles, active_preview_miles, &highway_systems, args.logfilepath+"/users/");
       #endif

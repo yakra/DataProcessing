@@ -1,7 +1,7 @@
 // Build a graph structure out of all highway data in active and
 // preview systems
 cout << et.et() << "Setting up for graphs of highway data." << endl;
-HighwayGraph graph_data(all_waypoints, highway_systems, datacheckerrors, args.numthreads, et);
+HighwayGraph graph_data(all_waypoints, highway_systems, datacheckerrors, args.GraphThreads, et);
 
 cout << et.et() << "Writing graph waypoint simplification log." << endl;
 ofstream wslogfile(args.logfilepath + "/waypointsimplification.log");
@@ -67,16 +67,18 @@ else {	list<Region*> *regions;
 	#include "subgraphs/region.cpp"
       #ifdef threading_enabled
 	// write graph_vector entries to disk
+	thr = new thread*[args.GraphThreads];
 	thr[0] = new thread(MasterTmgThread, &graph_data, &graph_vector, args.graphfilepath+'/', &traveler_lists, &graphnum, &list_mtx, &all_waypoints, &et);
 	// set up for threaded subgraph generation
 	// start at t=1, because MasterTmgThread will spawn another SubgraphThread when finished
-	for (unsigned int t = 1; t < args.numthreads; t++)
+	for (unsigned int t = 1; t < args.GraphThreads; t++)
 		thr[t] = new thread(SubgraphThread, t, &graph_data, &graph_vector, &graphnum, &list_mtx, args.graphfilepath+'/', &all_waypoints, &et);
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	for (unsigned int t = 0; t < args.GraphThreads; t++)
 		thr[t]->join();
-	for (unsigned int t = 0; t < args.numthreads; t++)
+	for (unsigned int t = 0; t < args.GraphThreads; t++)
 		delete thr[t];
 	cout << '!' << endl;
+	delete[] thr;
       #endif
      }
 

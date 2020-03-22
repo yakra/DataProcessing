@@ -35,7 +35,7 @@ class TravelerList
 		preview_systems_traveled = 0;
 		preview_systems_clinched = 0;
 		unsigned int list_entries = 0;
-		traveler_num = new unsigned int[args->numthreads];
+		traveler_num = new unsigned int[args->GraphThreads];
 			       // deleted on termination of program
 		traveler_name = travname.substr(0, travname.size()-5); // strip ".list" from end of travname
 		std::ofstream log(args->logfilepath+"/users/"+traveler_name+".log");

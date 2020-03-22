@@ -16,12 +16,12 @@ class HGVertex
 	int *c_vertex_num;
 	int *t_vertex_num;
 
-	HGVertex(Waypoint *wpt, const std::string *n, DatacheckEntryList *datacheckerrors, unsigned int numthreads)
+	HGVertex(Waypoint *wpt, const std::string *n, DatacheckEntryList *datacheckerrors, unsigned int GraphThreads)
 	{	lat = wpt->lat;
 		lng = wpt->lng;
-		s_vertex_num = new int[numthreads];
-		c_vertex_num = new int[numthreads];
-		t_vertex_num = new int[numthreads];
+		s_vertex_num = new int[GraphThreads];
+		c_vertex_num = new int[GraphThreads];
+		t_vertex_num = new int[GraphThreads];
 			       // deleted by ~HGVertex, called by HighwayGraph::clear
 		unique_name = n;
 		visibility = 0;

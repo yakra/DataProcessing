@@ -22,7 +22,7 @@ class HighwayGraph
 	(	WaypointQuadtree &all_waypoints,
 		std::list<HighwaySystem*> &highway_systems,
 		DatacheckEntryList *datacheckerrors,
-		unsigned int numthreads,
+		unsigned int GraphThreads,
 		ElapsedTime &et
 	)
 	{	// loop for each Waypoint, create a unique name and vertex,
@@ -69,7 +69,7 @@ class HighwayGraph
 			}
 
 			// we're good; now construct a vertex
-			vertices[w] = new HGVertex(w, &*(vertex_names.insert(point_name).first), datacheckerrors, numthreads);
+			vertices[w] = new HGVertex(w, &*(vertex_names.insert(point_name).first), datacheckerrors, GraphThreads);
 				      // deleted by HighwayGraph::clear
 
 			// active/preview colocation lists are no longer needed; clear them
