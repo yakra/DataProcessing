@@ -17,5 +17,6 @@
 #include "NmpSearchThread.cpp"
 #include "ReadListThread.cpp"
 #include "ReadWptThread.cpp"
+#include "StatsCsvThread.cpp"
 #include "SubgraphThread.cpp"
 #include "UserLogThread.cpp"

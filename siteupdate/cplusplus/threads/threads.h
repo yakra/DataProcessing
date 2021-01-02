@@ -21,5 +21,6 @@ void NmpMergedThread (unsigned int, std::list<HighwaySystem*>*, std::list<Highwa
 void NmpSearchThread (unsigned int, std::list<HighwaySystem*>*, std::list<HighwaySystem*>::iterator*, std::mutex*, WaypointQuadtree*);
 void ReadListThread  (unsigned int, std::list<std::string>*,    std::unordered_map<std::string, std::string**>*, std::list<std::string>::iterator*, std::list<TravelerList*>*, std::mutex*, Arguments*, ErrorList*);
 void ReadWptThread   (unsigned int, std::list<HighwaySystem*>*, std::list<HighwaySystem*>::iterator*, std::mutex*, std::string, ErrorList*, std::unordered_set<std::string>*, WaypointQuadtree*);
+void StatsCsvThread  (unsigned int, std::list<HighwaySystem*>*, std::list<HighwaySystem*>::iterator*, std::mutex*, std::string*, std::list<TravelerList*>*);
 void SubgraphThread  (unsigned int, HighwayGraph*, std::vector<GraphListEntry>*, size_t*, std::mutex*, std::string, WaypointQuadtree*, ElapsedTime*);
 void UserLogThread   (unsigned int, std::list<TravelerList *>*, std::list<TravelerList*>::iterator*, std::mutex*, ClinchedDBValues*, const double, const double, std::list<HighwaySystem*>*, std::string);

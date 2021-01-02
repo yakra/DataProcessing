@@ -3,6 +3,7 @@ class ErrorList;
 class HGVertex;
 class Region;
 class Route;
+class TravelerList;
 #include <list>
 #include <mutex>
 #include <unordered_map>
@@ -46,6 +47,7 @@ class HighwaySystem
 		      std::vector<std::pair<std::string,std::string>> &,
 		      std::unordered_map<std::string, Region*> &);
 
+	void stats_csv(std::string&, std::list<TravelerList*>&);
 	bool active();			// Return whether this is an active system
 	bool preview();			// Return whether this is a preview system
 	bool active_or_preview();	// Return whether this is an active or preview system

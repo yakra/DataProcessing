@@ -796,42 +796,20 @@ int main(int argc, char *argv[])
 	allfile.close();
 
 	// now, a file for each system, again per traveler by region
-	for (HighwaySystem *h : highway_systems)
-	{	ofstream sysfile(args.csvstatfilepath + "/" + h->systemname + "-all.csv");
-		sysfile << "Traveler,Total";
-		regions.clear();
-		total_mi = 0;
-		for (std::pair<Region* const, double>& rm : h->mileage_by_region)
-		{	regions.push_back(rm.first);
-			total_mi += rm.second;		//TODO is this right?
-		}
-		regions.sort(sort_regions_by_code);
-		for (Region *region : regions)
-			sysfile << ',' << region->code;
-		sysfile << '\n';
-		for (TravelerList *t : traveler_lists)
-		  // only include entries for travelers who have any mileage in system
-		  if (t->system_region_mileages.find(h) != t->system_region_mileages.end())
-		  {	sprintf(fstr, ",%.2f", t->system_region_miles(h));
-			sysfile << t->traveler_name << fstr;
-			for (Region *region : regions)
-			  try {	sprintf(fstr, ",%.2f", t->system_region_mileages.at(h).at(region));
-				sysfile << fstr;
-			      }
-			  catch (const std::out_of_range& oor)
-			      {	sysfile << ",0";
-			      }
-			sysfile << '\n';
-		  }
-		sprintf(fstr, "TOTAL,%.2f", h->total_mileage());
-		sysfile << fstr;
-		for (Region *region : regions)
-		{	sprintf(fstr, ",%.2f", h->mileage_by_region.at(region));
-			sysfile << fstr;
-		}
-		sysfile << '\n';
-		sysfile.close();
-	}
+      #ifdef threading_enabled
+	// set up for threaded processing of FIXME just delete all these
+	hs_it = highway_systems.begin();
+
+	thr = new thread*[args.numthreads];
+	for (unsigned int t = 0; t < args.numthreads; t++)
+		thr[t] = new thread(StatsCsvThread, t, &highway_systems, &hs_it, &list_mtx, &args.csvstatfilepath, &traveler_lists);
+	for (unsigned int t = 0; t < args.numthreads; t++)
+		thr[t]->join();
+	for (unsigned int t = 0; t < args.numthreads; t++)
+		delete thr[t];
+      #else
+	for (HighwaySystem *h : highway_systems) h->stats_csv(args.csvstatfilepath, traveler_lists);
+      #endif
 
 	// read in the datacheck false positives list
 	cout << et.et() << "Reading datacheckfps.csv." << endl;
