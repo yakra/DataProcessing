@@ -1,4 +1,5 @@
 #include "Route.h"
+#include "../ConnectedRoute/ConnectedRoute.h"
 #include "../DBFieldLength/DBFieldLength.h"
 #include "../ErrorList/ErrorList.h"
 #include "../HighwaySegment/HighwaySegment.h"
@@ -253,3 +254,4 @@ bool sort_route_updates_oldest(const Route *r1, const Route *r2)
 }
 
 #include "compute_stats_r.cpp"
+#include "label_and_connect.cpp"
