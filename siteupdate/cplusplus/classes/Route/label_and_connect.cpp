@@ -37,9 +37,9 @@ void Route::label_and_connect(ErrorList& el)
 	// create label hashes and check for duplicates
 	for (unsigned int index = 0; index < point_list.size(); index++)
 	{	// ignore case and leading '+' or '*'
-		std::string upper_label = upper(point_list[index]->label);
-		while (upper_label[0] == '+' || upper_label[0] == '*')
-			upper_label = upper_label.substr(1);
+		size_t lbegin = 0;
+		while (point_list[index]->label[lbegin] == '+' || point_list[index]->label[lbegin] == '*') lbegin++;
+		std::string upper_label = upper(point_list[index]->label.substr(lbegin));
 		// if primary label not duplicated, add to pri_label_hash
 		if (alt_label_hash.find(upper_label) != alt_label_hash.end())
 		{	DatacheckEntry::add(this, upper_label, "", "", "DUPLICATE_LABEL", "");
