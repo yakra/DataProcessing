@@ -39,7 +39,8 @@ void Route::label_and_connect(ErrorList& el)
 	{	// ignore case and leading '+' or '*'
 		const char* lbegin = point_list[index]->label.data();
 		while (*lbegin == '+' || *lbegin == '*') lbegin++;
-		std::string upper_label = upper(std::string(lbegin));
+		std::string upper_label(lbegin);
+		upper(upper_label.data());
 		// if primary label not duplicated, add to pri_label_hash
 		if (alt_label_hash.find(upper_label) != alt_label_hash.end())
 		{	DatacheckEntry::add(this, upper_label, "", "", "DUPLICATE_LABEL", "");
