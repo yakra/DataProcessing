@@ -55,11 +55,20 @@ Arguments::Arguments(int argc, char *argv[])
 }
 
 void Arguments::show_help()
-{	std::cout <<	"usage: siteupdate.py [-h] [-w HIGHWAYDATAPATH] [-s SYSTEMSFILE]\n";
-	std::cout <<	"		     [-u USERLISTFILEPATH] [-d DATABASENAME] [-l LOGFILEPATH]\n";
-	std::cout <<	"		     [-c CSVSTATFILEPATH] [-g GRAPHFILEPATH] [-k]\n";
-	std::cout <<	"		     [-n NMPMERGEPATH] [-p SPLITREGIONPATH SPLITREGION]\n";
-	std::cout <<	"		     [-U USERLIST [USERLIST ...]] [-t NUMTHREADS] [-e]\n";
+{
+      #ifdef threading_enabled
+	std::cout <<	"usage: siteupdate [-h] [-w HIGHWAYDATAPATH] [-s SYSTEMSFILE]\n";
+	std::cout <<	"		  [-u USERLISTFILEPATH] [-d DATABASENAME] [-l LOGFILEPATH]\n";
+	std::cout <<	"		  [-c CSVSTATFILEPATH] [-g GRAPHFILEPATH] [-k]\n";
+	std::cout <<	"		  [-n NMPMERGEPATH] [-p SPLITREGIONPATH SPLITREGION]\n";
+	std::cout <<	"		  [-U USERLIST [USERLIST ...]] [-t NUMTHREADS] [-e]\n";
+      #else
+	std::cout <<	"usage: siteupdateST [-h] [-w HIGHWAYDATAPATH] [-s SYSTEMSFILE]\n";
+	std::cout <<	"		    [-u USERLISTFILEPATH] [-d DATABASENAME] [-l LOGFILEPATH]\n";
+	std::cout <<	"		    [-c CSVSTATFILEPATH] [-g GRAPHFILEPATH] [-k]\n";
+	std::cout <<	"		    [-n NMPMERGEPATH] [-p SPLITREGIONPATH SPLITREGION]\n";
+	std::cout <<	"		    [-U USERLIST [USERLIST ...]] [-t NUMTHREADS] [-e]\n";
+      #endif
 	std::cout <<	"\n";
 	std::cout <<	"Create SQL, stats, graphs, and log files from highway and user data for the\n";
 	std::cout <<	"Travel Mapping project.\n";

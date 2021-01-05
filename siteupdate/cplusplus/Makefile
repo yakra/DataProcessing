@@ -1,13 +1,14 @@
 MTObjects = siteupdateMT.o functions/sql_fileMT.o threads/threads.o \
+  classes/Arguments/ArgumentsMT.o \
   classes/GraphGeneration/HighwayGraphMT.o \
   classes/WaypointQuadtree/WaypointQuadtreeMT.o
 
 STObjects = siteupdateST.o functions/sql_fileST.o \
+  classes/Arguments/ArgumentsST.o \
   classes/GraphGeneration/HighwayGraphST.o \
   classes/WaypointQuadtree/WaypointQuadtreeST.o
 
 CommonObjects = \
-  classes/Arguments/Arguments.o \
   classes/ClinchedDBValues/ClinchedDBValues.o \
   classes/ConnectedRoute/ConnectedRoute.o \
   classes/DatacheckEntry/DatacheckEntry.o \
