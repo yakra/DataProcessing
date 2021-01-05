@@ -716,10 +716,10 @@ int main(int argc, char *argv[])
 	cout << "!" << endl;
 
 	// write stats csv files
-	cout << et.et() << "Writing stats csv files." << endl;
 	double total_mi;
 
 	// first, overall per traveler by region, both active only and active+preview
+	cout << et.et() << "Writing allbyregionactiveonly.csv." << endl;
 	ofstream allfile(args.csvstatfilepath + "/allbyregionactiveonly.csv");
 	allfile << "Traveler,Total";
 	std::list<Region*> regions;
@@ -758,6 +758,7 @@ int main(int argc, char *argv[])
 	allfile.close();
 
 	// active+preview
+	cout << et.et() << "Writing allbyregionactivepreview.csv." << endl;
 	allfile.open(args.csvstatfilepath + "/allbyregionactivepreview.csv");
 	allfile << "Traveler,Total";
 	regions.clear();
@@ -796,6 +797,7 @@ int main(int argc, char *argv[])
 	allfile.close();
 
 	// now, a file for each system, again per traveler by region
+	cout << et.et() << "Writing per-system stats csv files." << endl;
       #ifdef threading_enabled
 	// set up for threaded processing of FIXME just delete all these
 	hs_it = highway_systems.begin();
