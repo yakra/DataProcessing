@@ -15,6 +15,7 @@ class Arguments
 	/* p */ std::string splitregion, splitregionpath;
 	/* U */ std::list<std::string> userlist;
 	/* t */ int numthreads;
+	/* T */ int timeprecision;
 	/* e */ bool errorcheck;
 	/* h */ bool help;
 

@@ -15,6 +15,7 @@ Arguments::Arguments(int argc, char *argv[])
 	/* p */ splitregionpath = "";
 	/* U */ // nothing to do here
 	/* t */ numthreads = 4;
+	/* T */ timeprecision = 1;
 	/* e */ errorcheck = 0;
 	/* h */ help = 0;
 
@@ -42,6 +43,8 @@ Arguments::Arguments(int argc, char *argv[])
 			splitregionpath = argv[n+1]; splitregion = argv[n+2]; n +=2; }
 		else if ( n+1 < argc && !strcmp(argv[n], "-t") || !strcmp(argv[n], "--numthreads") ) {
 			numthreads = strtol(argv[n+1], 0, 10); n++; if (numthreads<1) numthreads=1; }
+		else if ( n+1 < argc && !strcmp(argv[n], "-T") || !strcmp(argv[n], "--timeprecision") ) {
+			timeprecision = strtol(argv[n+1], 0, 10); n++; if (timeprecision<1) timeprecision=1; if (timeprecision>9) timeprecision=9; }
 		else if (               !strcmp(argv[n], "-e") || !strcmp(argv[n], "--errorcheck") )
 			errorcheck = 1;
 		else if (               !strcmp(argv[n], "-h") || !strcmp(argv[n], "--help") ) {
@@ -61,13 +64,15 @@ void Arguments::show_help()
 	std::cout <<	"		  [-u USERLISTFILEPATH] [-d DATABASENAME] [-l LOGFILEPATH]\n";
 	std::cout <<	"		  [-c CSVSTATFILEPATH] [-g GRAPHFILEPATH] [-k]\n";
 	std::cout <<	"		  [-n NMPMERGEPATH] [-p SPLITREGIONPATH SPLITREGION]\n";
-	std::cout <<	"		  [-U USERLIST [USERLIST ...]] [-t NUMTHREADS] [-e]\n";
+	std::cout <<	"		  [-U USERLIST [USERLIST ...]] [-t NUMTHREADS]\n";
+	std::cout <<	"		  [-T TIMEPRECISION] [-e]\n";
       #else
 	std::cout <<	"usage: siteupdateST [-h] [-w HIGHWAYDATAPATH] [-s SYSTEMSFILE]\n";
 	std::cout <<	"		    [-u USERLISTFILEPATH] [-d DATABASENAME] [-l LOGFILEPATH]\n";
 	std::cout <<	"		    [-c CSVSTATFILEPATH] [-g GRAPHFILEPATH] [-k]\n";
 	std::cout <<	"		    [-n NMPMERGEPATH] [-p SPLITREGIONPATH SPLITREGION]\n";
-	std::cout <<	"		    [-U USERLIST [USERLIST ...]] [-t NUMTHREADS] [-e]\n";
+	std::cout <<	"		    [-U USERLIST [USERLIST ...]] [-t NUMTHREADS]\n";
+	std::cout <<	"		    [-T TIMEPRECISION] [-e]\n";
       #endif
 	std::cout <<	"\n";
 	std::cout <<	"Create SQL, stats, graphs, and log files from highway and user data for the\n";
@@ -103,6 +108,9 @@ void Arguments::show_help()
 	std::cout <<	"		        For Development: list of users to use in dataset\n";
 	std::cout <<	"  -t NUMTHREADS, --numthreads NUMTHREADS\n";
 	std::cout <<	"		        Number of threads to use for concurrent tasks\n";
+	std::cout <<	"  -T TIMEPRECISION, --timeprecision TIMEPRECISION\n";
+	std::cout <<	"		        Number of digits (1-9) after decimal point in\n";
+	std::cout <<	"		        timestamp readouts\n";
 	std::cout <<	"  -e, --errorcheck      Run only the subset of the process needed to verify\n";
 	std::cout <<	"		        highway data changes\n";
 }
