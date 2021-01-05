@@ -351,7 +351,7 @@ void HighwayGraph::write_subgraphs_tmg
 	}
       #ifdef threading_enabled
 	if (graph_vector[graphnum].cat != graph_vector[graphnum-1].cat)
-		std::cout << '\n' + et->et() + "Writing " + graph_vector[graphnum].category() + " graphs.\n";
+		std::cout << '\n' << et->et() << "Writing " << graph_vector[graphnum].category() << " graphs.\n";
       #endif
 	std::cout << graph_vector[graphnum].tag()
 		  << '(' << mv.size() << ',' << mse.size() << ") "
