@@ -152,46 +152,58 @@ void HighwayGraph::clear()
 inline void HighwayGraph::matching_vertices_and_edges
 (	GraphListEntry &g, WaypointQuadtree *qt,
 	std::list<TravelerList*> &traveler_lists,
-	std::unordered_set<HGVertex*> &mvset,	// final set of vertices matching all criteria
-	std::list<HGEdge*> &mse,		// matching    simple edges
-	std::list<HGEdge*> &mce,		// matching collapsed edges
-	std::list<HGEdge*> &mte,		// matching  traveled edges
+	std::list<HGVertex*> &mvlist,	// final set of vertices matching all criteria
+	std::list<HGEdge*> &mse,	// matching    simple edges
+	std::list<HGEdge*> &mce,	// matching collapsed edges
+	std::list<HGEdge*> &mte,	// matching  traveled edges
 	int threadnum, unsigned int &cv_count, unsigned int &tv_count
 )
 {	// Find a set of vertices from the graph, optionally
 	// restricted by region or system or placeradius area.
 	cv_count = 0;
 	tv_count = 0;
-	std::unordered_set<HGVertex*> rvset;	// union of all sets in regions
-	std::unordered_set<HGVertex*> svset;	// union of all sets in systems
-	std::unordered_set<HGVertex*> pvset;	// set of vertices within placeradius
+	std::list<HGVertex*> rvlist;	// union of all lists in regions
+	std::list<HGVertex*> svlist;	// union of all lists in systems
+	std::list<HGVertex*> pvlist;	// set of vertices within placeradius
 	std::unordered_set<TravelerList*> trav_set;
 
-	if (g.regions) for (Region *r : *g.regions)
-		rvset.insert(r->vertices.begin(), r->vertices.end());
-	if (g.systems) for (HighwaySystem *h : *g.systems)
-		svset.insert(h->vertices.begin(), h->vertices.end());
+	if (g.regions)
+	  for (Region *r : *g.regions)
+	    for (HGVertex* v : r->vertices)
+	      if (!v->in_subgraph[threadnum])
+	      {	rvlist.push_back(v);
+		v->in_subgraph[threadnum] = 1;
+	      }
+	if (g.systems)
+	  for (HighwaySystem *h : *g.systems)
+	    for (HGVertex* v : h->vertices)
+	      if (!v->in_subgraph[threadnum])
+	      {	svlist.push_back(v);
+		v->in_subgraph[threadnum] = 1;
+	      }
 	if (g.placeradius)
-		pvset = g.placeradius->vertices(qt, this);
+		pvlist = g.placeradius->vertices(qt, this);
 
 	// determine which vertices are within our region(s) and/or system(s)
 	if (g.regions)
-	{	mvset = rvset;
-		if (g.placeradius)	mvset = mvset & pvset;
-		if (g.systems)		mvset = mvset & svset;
+	{	mvlist.splice(mvlist.end(), rvlist);
+		//TODO: redo these operators for lists if full custom graphs ever become reality
+//		if (g.placeradius)	mvset = mvset & pvset;
+//		if (g.systems)		mvset = mvset & svset;
 	}
 	else if (g.systems)
-	{	mvset = svset;
-		if (g.placeradius)	mvset = mvset & pvset;
+	{	mvlist.splice(mvlist.end(), svlist);
+		//TODO: redo this operator for lists if full custom graphs ever become reality
+//		if (g.placeradius)	mvset = mvset & pvset;
 	}
 	else if (g.placeradius)
-		mvset = pvset;
+		mvlist.splice(mvlist.end(), pvlist);
 	else	// no restrictions via region, system, or placeradius, so include everything
 		for (std::pair<const Waypoint*, HGVertex*> wv : vertices)
-		  mvset.insert(wv.second);
+		  mvlist.push_back(wv.second);
 
 	// initialize *_written booleans
-	for (HGVertex *v : mvset)
+	for (HGVertex *v : mvlist)
 	{	for (HGEdge* e : v->incident_s_edges) e->s_written[threadnum] = 0;
 		for (HGEdge* e : v->incident_c_edges) e->c_written[threadnum] = 0;
 		for (HGEdge* e : v->incident_t_edges) e->t_written[threadnum] = 0;
@@ -200,8 +212,9 @@ inline void HighwayGraph::matching_vertices_and_edges
 	// Compute sets of edges for subgraphs, optionally
 	// restricted by region or system or placeradius.
 	// Keep a count of collapsed & traveled vertices as we go.
-	for (HGVertex *v : mvset)
-	{	for (HGEdge *e : v->incident_s_edges)
+	for (HGVertex *v : mvlist)
+	{	v->in_subgraph[threadnum] = 0;
+		for (HGEdge *e : v->incident_s_edges)
 		  if ((!g.placeradius || g.placeradius->contains_edge(e)) && !e->s_written[threadnum])
 		    if (!g.regions || contains(*g.regions, e->segment->route->region))
 		    {	bool system_match = !g.systems;
@@ -353,7 +366,7 @@ void HighwayGraph::write_subgraphs_tmg
 	std::ofstream simplefile(path+graph_vector[graphnum].filename());
 	std::ofstream collapfile(path+graph_vector[graphnum+1].filename());
 	std::ofstream travelfile(path+graph_vector[graphnum+2].filename());
-	std::unordered_set<HGVertex*> mv;
+	std::list<HGVertex*> mv;
 	std::list<HGEdge*> mse, mce, mte;
 	std::list<TravelerList*> traveler_lists;
 	matching_vertices_and_edges(graph_vector[graphnum], qt, traveler_lists, mv, mse, mce, mte, threadnum, cv_count, tv_count);

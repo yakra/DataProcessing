@@ -38,10 +38,10 @@ class HighwayGraph
 	inline void matching_vertices_and_edges
 	(	GraphListEntry&, WaypointQuadtree*,
 		std::list<TravelerList*> &,
-		std::unordered_set<HGVertex*>&,	// final set of vertices matching all criteria
-		std::list<HGEdge*>&,		// matching    simple edges
-		std::list<HGEdge*>&,		// matching collapsed edges
-		std::list<HGEdge*>&,		// matching  traveled edges
+		std::list<HGVertex*>&,	// final set of vertices matching all criteria
+		std::list<HGEdge*>&,	// matching    simple edges
+		std::list<HGEdge*>&,	// matching collapsed edges
+		std::list<HGEdge*>&,	// matching  traveled edges
 		int, unsigned int&, unsigned int&
 	);
 

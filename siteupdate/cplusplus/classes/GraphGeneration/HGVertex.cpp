@@ -9,10 +9,12 @@
 HGVertex::HGVertex(Waypoint *wpt, const std::string *n, unsigned int numthreads)
 {	lat = wpt->lat;
 	lng = wpt->lng;
+	in_subgraph = new bool[numthreads];
 	s_vertex_num = new int[numthreads];
 	c_vertex_num = new int[numthreads];
 	t_vertex_num = new int[numthreads];
 		       // deleted by ~HGVertex, called by HighwayGraph::clear
+	for (size_t i = 0; i < numthreads; i++) in_subgraph[i] = 0;
 	unique_name = n;
 	visibility = 0;
 	    // permitted values:
@@ -24,15 +26,15 @@ HGVertex::HGVertex(Waypoint *wpt, const std::string *n, unsigned int numthreads)
 	first_waypoint = wpt;
 	if (!wpt->colocated)
 	{	if (!wpt->is_hidden) visibility = 2;
-		wpt->route->region->vertices.insert(this);
-		wpt->route->system->vertices.insert(this);
+		wpt->route->region->vertices.push_back(this);
+		wpt->route->system->vertices.push_back(this);
 		return;
 	}
 	for (Waypoint *w : *(wpt->colocated))
 	{	// will consider hidden iff all colocated waypoints are hidden
 		if (!w->is_hidden) visibility = 2;
-		w->route->region->vertices.insert(this);
-		w->route->system->vertices.insert(this);
+		w->route->region->vertices.push_back(this);
+		w->route->system->vertices.push_back(this);
 	}
 	// VISIBLE_HIDDEN_COLOC datacheck
 	std::list<Waypoint*>::iterator p = wpt->colocated->begin();
@@ -59,4 +61,5 @@ HGVertex::~HGVertex()
 	delete[] s_vertex_num;
 	delete[] c_vertex_num;
 	delete[] t_vertex_num;
+	delete[] in_subgraph;
 }

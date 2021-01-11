@@ -50,7 +50,7 @@ bool PlaceRadius::contains_edge(HGEdge *e)
 	return contains_vertex(e->vertex1) and contains_vertex(e->vertex2);
 }
 
-std::unordered_set<HGVertex*> PlaceRadius::vertices(WaypointQuadtree *qt, HighwayGraph *g)
+std::list<HGVertex*> PlaceRadius::vertices(WaypointQuadtree *qt, HighwayGraph *g)
 {	// Compute and return a set of graph vertices within r miles of (lat, lng).
 	// This function handles setup & sanity checks, passing control over
 	// to the recursive v_search function to do the actual searching.
@@ -65,29 +65,29 @@ std::unordered_set<HGVertex*> PlaceRadius::vertices(WaypointQuadtree *qt, Highwa
 	double e_bound = lng+lngdelta;
 
 	// normal operation; search quadtree within calculated bounds
-	std::unordered_set<HGVertex*> vertex_set = v_search(qt, g, w_bound, e_bound);
+	std::list<HGVertex*> vertex_list = v_search(qt, g, w_bound, e_bound);
 
 	// If bounding box spans international date line to west of -180 degrees,
 	// search quadtree within the corresponding range of positive longitudes
 	if (w_bound <= -180)
 	{	while (w_bound <= -180) w_bound += 360;
-		for (HGVertex *v : v_search(qt, g, w_bound, 180)) vertex_set.insert(v);
+		vertex_list.splice(vertex_list.end(), v_search(qt, g, w_bound, 180));
 	}
 
 	// If bounding box spans international date line to east of +180 degrees,
 	// search quadtree within the corresponding range of negative longitudes
 	if (e_bound >= 180)
 	{	while (e_bound >= 180) e_bound -= 360;
-		for (HGVertex *v : v_search(qt, g, -180, e_bound)) vertex_set.insert(v);
+		vertex_list.splice(vertex_list.end(), v_search(qt, g, -180, e_bound));
 	}
 
-	return vertex_set;
+	return vertex_list;
 }
 
-std::unordered_set<HGVertex*> PlaceRadius::v_search(WaypointQuadtree *qt, HighwayGraph *g, double w_bound, double e_bound)
+std::list<HGVertex*> PlaceRadius::v_search(WaypointQuadtree *qt, HighwayGraph *g, double w_bound, double e_bound)
 {	// recursively search quadtree for waypoints within this PlaceRadius area, and return a set
 	// of their corresponding graph vertices to return to the PlaceRadius::vertices function
-	std::unordered_set<HGVertex*> vertex_set;
+	std::list<HGVertex*> vertex_list;
 
 	// first check if this is a terminal quadrant, and if it is,
 	// we search for vertices within this quadrant
@@ -96,7 +96,7 @@ std::unordered_set<HGVertex*> PlaceRadius::v_search(WaypointQuadtree *qt, Highwa
 		  if (	(!p->colocated || p == p->colocated->front())
 		  &&	p->is_or_colocated_with_active_or_preview()
 		  &&	contains_vertex(p->lat, p->lng)
-		     )	vertex_set.insert(g->vertices.at(p));
+		     )	vertex_list.push_back(g->vertices.at(p));
 	}
 	// if we're not a terminal quadrant, we need to determine which
 	// of our child quadrants we need to search and recurse into each
@@ -107,13 +107,12 @@ std::unordered_set<HGVertex*> PlaceRadius::v_search(WaypointQuadtree *qt, Highwa
 		bool look_w = w_bound <= qt->mid_lng;
 		//std::cout << "DEBUG: recursive case, " << look_n << " " << look_s << " " << look_e << " " << look_w << std::endl;
 		// now look in the appropriate child quadrants
-		std::unordered_set<HGVertex*> addv;
-		if (look_n && look_w)	for (HGVertex *v : v_search(qt->nw_child, g, w_bound, e_bound)) vertex_set.insert(v);
-		if (look_n && look_e)	for (HGVertex *v : v_search(qt->ne_child, g, w_bound, e_bound)) vertex_set.insert(v);
-		if (look_s && look_w)	for (HGVertex *v : v_search(qt->sw_child, g, w_bound, e_bound)) vertex_set.insert(v);
-		if (look_s && look_e)	for (HGVertex *v : v_search(qt->se_child, g, w_bound, e_bound)) vertex_set.insert(v);
+		if (look_n && look_w)	vertex_list.splice(vertex_list.end(), v_search(qt->nw_child, g, w_bound, e_bound));
+		if (look_n && look_e)	vertex_list.splice(vertex_list.end(), v_search(qt->ne_child, g, w_bound, e_bound));
+		if (look_s && look_w)	vertex_list.splice(vertex_list.end(), v_search(qt->sw_child, g, w_bound, e_bound));
+		if (look_s && look_e)	vertex_list.splice(vertex_list.end(), v_search(qt->se_child, g, w_bound, e_bound));
 	     }
-	return vertex_set;
+	return vertex_list;
 }
 
 #undef pi

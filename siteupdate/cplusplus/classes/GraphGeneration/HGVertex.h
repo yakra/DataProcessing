@@ -21,6 +21,7 @@ class HGVertex
 	int *s_vertex_num;
 	int *c_vertex_num;
 	int *t_vertex_num;
+	bool* in_subgraph;
 
 	HGVertex(Waypoint*, const std::string*, unsigned int);
 	~HGVertex();

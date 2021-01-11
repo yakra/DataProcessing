@@ -3,7 +3,7 @@ class HGVertex;
 class HighwayGraph;
 class WaypointQuadtree;
 #include <iostream>
-#include <unordered_set>
+#include <list>
 
 class PlaceRadius
 {	/* This class encapsulates a place name, file base name, latitude,
@@ -22,6 +22,6 @@ class PlaceRadius
 	bool contains_vertex(HGVertex *);
 	bool contains_vertex(double, double);
 	bool contains_edge(HGEdge *);
-	std::unordered_set<HGVertex*> vertices(WaypointQuadtree *, HighwayGraph *);
-	std::unordered_set<HGVertex*> v_search(WaypointQuadtree *, HighwayGraph *, double, double);
+	std::list<HGVertex*> vertices(WaypointQuadtree *, HighwayGraph *);
+	std::list<HGVertex*> v_search(WaypointQuadtree *, HighwayGraph *, double, double);
 };
