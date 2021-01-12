@@ -165,7 +165,6 @@ inline void HighwayGraph::matching_vertices_and_edges
 	std::list<HGVertex*> rvlist;	// union of all lists in regions
 	std::list<HGVertex*> svlist;	// union of all lists in systems
 	std::list<HGVertex*> pvlist;	// set of vertices within placeradius
-	std::unordered_set<TravelerList*> trav_set;
 
 	if (g.regions)
 	  for (Region *r : *g.regions)
@@ -244,7 +243,11 @@ inline void HighwayGraph::matching_vertices_and_edges
 			if (system_match)
 			{	mte.push_back(e);
 				e->t_written[threadnum] = 1;
-				for (TravelerList *t : e->segment->clinched_by) trav_set.insert(t);
+				for (TravelerList *t : e->segment->clinched_by)
+				  if (!t->in_subgraph[threadnum])
+				  {	traveler_lists.push_back(t);
+					t->in_subgraph[threadnum] = 1;
+				  }
 			}
 		    }
 		if (v->visibility < 2) continue;
@@ -265,7 +268,7 @@ inline void HighwayGraph::matching_vertices_and_edges
 			}
 		    }
 	}
-	traveler_lists.assign(trav_set.begin(), trav_set.end());
+	for (TravelerList* t : traveler_lists) t->in_subgraph[threadnum] = 0;
 	traveler_lists.sort(sort_travelers_by_name);
 }
 
