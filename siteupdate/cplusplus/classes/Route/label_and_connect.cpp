@@ -52,8 +52,8 @@ void Route::label_and_connect(ErrorList& el)
 		}
 		for (std::string& a : point_list[index]->alt_labels)
 		{	// create canonical AltLabels
-			for (lbegin = a.data(); *lbegin == '+' || *lbegin == '*'; lbegin++);
-			a = upper(lbegin);
+			while (a[0] == '+' || a[0] == '*') a.assign(a.data()+1);
+			upper(a.data());
 			// populate unused set
 			unused_alt_labels.insert(a);
 			// create label->index hashes and check if AltLabels duplicated
