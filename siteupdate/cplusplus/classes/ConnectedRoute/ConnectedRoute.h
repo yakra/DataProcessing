@@ -25,4 +25,5 @@ class ConnectedRoute
 	size_t index();
 	//std::string list_lines(int, int, std::string, size_t);
 	void verify_connectivity();
+	void combine_con_routes();
 };

@@ -20,7 +20,7 @@ ConnectedRoute::ConnectedRoute(std::string &line, HighwaySystem *sys, ErrorList 
 	if (NumFields != 5)
 	{	el.add_error("Could not parse " + sys->systemname
 			   + "_con.csv line: [" + line + "], expected 5 fields, found " + std::to_string(NumFields));
-		return;
+		throw 0xBAD;
 	}
 	// system
 	if (system->systemname != sys_str)
@@ -62,7 +62,10 @@ ConnectedRoute::ConnectedRoute(std::string &line, HighwaySystem *sys, ErrorList 
 					" in system " + system->systemname + '.');
 		    }
 	}
-	if (roots.size() < 1) el.add_error("No valid roots in " + system->systemname + "_con.csv line: " + line);
+	if (roots.size() < 1)
+	{	el.add_error("No valid roots in " + system->systemname + "_con.csv line: " + line);
+		throw 0xBAD;
+	}
 }
 
 std::string ConnectedRoute::connected_rtes_line()
@@ -135,4 +138,17 @@ void ConnectedRoute::verify_connectivity()
 				q->set_reversed();
 			else	flag();
 	}
+}
+
+void ConnectedRoute::combine_con_routes()
+{	// check for separate ConnectedRoutes that could potentially be combined into one
+	for (Waypoint* w : {roots[ 0 ] -> points.size ? roots[ 0 ] -> con_beg() : 0,
+			    roots.back()->points.size ? roots.back()->con_end() : 0})
+	  if (w && w->colocated) // empty routes (eg file not found) had w set to nullptr above
+	    for (Waypoint* p : *w->colocated)
+	      if (ConnectedRoute* cr2 = p->route->con_route) // skip if p->route has no ConnectedRoute
+		if (w->route->region != p->route->region && system == p->route->system && this < cr2)
+		  if (p == cr2->roots[0]->con_beg() || p == cr2->roots.back()->con_end())
+		    if (w->route->route == p->route->route && w->route->banner == p->route->banner)
+		      Datacheck::add(w->route,  w->label, "", "", "COMBINE_CON_ROUTES", p->root_at_label());
 }
